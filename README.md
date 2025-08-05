@@ -12,5 +12,5 @@ Key features include:
 - **Level progression**: Collect 5 crystals to activate the warp gate, then advance to higher levels with increased difficulty  
 - **Smooth controls**: Arrow keys for movement and rotation, Q to fire, SPACE to boost, P/ESC to pause  
 
-# All the things are are written in the ga,e how to play section. Go and refer there.
+# All the things are are written in the game how to play section. Go and refer there.
 
