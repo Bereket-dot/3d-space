@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Escape: Ultimate Space Adventure</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #000;
+            color: #fff;
+            touch-action: none;
+            background: radial-gradient(ellipse at center, #0a0a2a 0%, #000010 100%);
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        #uiContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(ellipse at center, rgba(0, 10, 50, 0.9) 0%, rgba(0, 0, 20, 0.95) 70%);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            pointer-events: auto;
+            transition: opacity 0.8s ease;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #startScreen {
+            text-align: center;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="100%" height="100%" fill="black"/><circle cx="100" cy="100" r="2" fill="white" opacity="0.8"/><circle cx="40" cy="60" r="1" fill="white" opacity="0.6"/><circle cx="160" cy="80" r="1.5" fill="white" opacity="0.7"/><circle cx="70" cy="150" r="1.2" fill="white" opacity="0.5"/><circle cx="180" cy="160" r="1" fill="white" opacity="0.4"/></svg>') repeat;
+        }
+        
+        .title {
+            font-size: 4.5rem;
+            color: #00f3ff;
+            text-shadow: 0 0 15px #00f3ff, 0 0 30px #0066ff, 0 0 45px #0033ff;
+            margin-bottom: 1.5rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00f3ff, #ff00ff, #00f3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% 300%;
+            animation: gradientShift 6s ease infinite;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            color: #ff99ff;
+            margin-bottom: 3rem;
+            text-shadow: 0 0 10px #ff00ff;
+            max-width: 700px;
+            line-height: 1.7;
+            padding: 0 20px;
+            text-align: center;
+            font-weight: 300;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #ff00ff, #00f3ff, #ff00ff);
+            background-size: 300% 300%;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 35px;
+            cursor: pointer;
+            transition: all 0.4s;
+            pointer-events: auto;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.7), 0 0 40px rgba(255, 0, 255, 0.5);
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, #ff00ff, #00f3ff, #ff00ff);
+            background-size: 300% 300%;
+            z-index: -1;
+            border-radius: 40px;
+            filter: blur(20px);
+            opacity: 0.7;
+            animation: gradientShift 4s ease infinite;
+        }
+        
+        .btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 35px rgba(0, 243, 255, 0.9), 0 0 55px rgba(255, 0, 255, 0.7);
+            animation: gradientShift 2s ease infinite;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 300px;
+            z-index: 10;
+            background: rgba(0, 5, 20, 0.85);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            backdrop-filter: blur(5px);
+        }
+        
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+        }
+        
+        .hud-title {
+            color: #00f3ff;
+            font-size: 1.1rem;
+            text-shadow: 0 0 8px #00f3ff;
+        }
+        
+        .hud-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .hud-label {
+            color: #00f3ff;
+            width: 100px;
+            text-shadow: 0 0 5px #00f3ff;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .hud-value {
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-shadow: 0 0 5px #fff;
+        }
+        
+        .progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .progress-bar {
+            flex: 1;
+            height: 14px;
+            background: rgba(0, 0, 30, 0.8);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s;
+            position: relative;
+        }
+        
+        #healthBar {
+            background: linear-gradient(90deg, #ff3300, #ff9900, #66ff00);
+        }
+        
+        #shieldBar {
+            background: linear-gradient(90deg, #0066ff, #00ccff, #00ffff);
+        }
+        
+        #energyBar {
+            background: linear-gradient(90deg, #ff00ff, #ff66ff, #ffccff);
+        }
+        
+        #miniMap {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 180px;
+            height: 180px;
+            background: rgba(0, 5, 20, 0.85);
+            border-radius: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            z-index: 10;
+            overflow: hidden;
+            backdrop-filter: blur(3px);
+        }
+        
+        #miniMapCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .map-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00f3ff;
+            font-size: 0.9rem;
+            text-shadow: 0 0 5px #00f3ff;
+            z-index: 11;
+        }
+        
+        #controlsInfo {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0, 5, 20, 0.85);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            z-index: 10;
+            max-width: 280px;
+            backdrop-filter: blur(3px);
+        }
+        
+        .controls-title {
+            color: #00f3ff;
+            margin-bottom: 12px;
+            text-shadow: 0 0 8px #00f3ff;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .control-item {
+            display: flex;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        
+        .control-key {
+            color: #ff00ff;
+            width: 100px;
+            text-shadow: 0 0 5px #ff00ff;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .control-desc {
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        
+        #gameOverScreen {
+            text-align: center;
+        }
+        
+        #finalScore {
+            font-size: 2.5rem;
+            color: #00f3ff;
+            margin: 25px 0;
+            text-shadow: 0 0 15px #00f3ff;
+            background: linear-gradient(90deg, #00f3ff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        
+        #pauseScreen {
+            text-align: center;
+        }
+        
+        #levelIndicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 5, 20, 0.85);
+            border-radius: 15px;
+            padding: 12px 20px;
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            z-index: 10;
+            text-align: center;
+            backdrop-filter: blur(3px);
+        }
+        
+        #levelText {
+            color: #00f3ff;
+            font-size: 1.4rem;
+            text-shadow: 0 0 10px #00f3ff;
+            font-weight: 700;
+        }
+        
+        #loadingScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: #000;
+            z-index: 100;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 8px solid rgba(0, 243, 255, 0.2);
+            border-top: 8px solid #00f3ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        #progressBarContainer {
+            width: 250px;
+            height: 15px;
+            background: rgba(0, 20, 40, 0.7);
+            border-radius: 8px;
+            margin-top: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+        }
+        
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f3ff, #ff00ff);
+            transition: width 0.3s ease;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 5, 20, 0.7);
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            font-size: 0.8rem;
+        }
+        
+        .status-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+        }
+        
+        .laser-beam {
+            position: absolute;
+            width: 4px;
+            height: 1000px;
+            background: linear-gradient(to bottom, rgba(0, 243, 255, 0.8), transparent);
+            z-index: 3;
+            pointer-events: none;
+            transform-origin: top center;
+        }
+        
+        .health-bar {
+            position: absolute;
+            height: 4px;
+            width: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 5;
+            transform: translateX(-50%);
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ff0000, #00ff00);
+            transition: width 0.2s;
+        }
+        
+        .collect-effect {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,0,0.8) 0%, rgba(255,255,0,0) 70%);
+            pointer-events: none;
+            animation: collectAnim 0.5s forwards;
+            z-index: 10;
+        }
+        
+        #notification {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 10, 50, 0.8);
+            padding: 15px 30px;
+            border-radius: 30px;
+            border: 2px solid #00f3ff;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.7);
+            z-index: 15;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        
+        .pulsate {
+            animation: pulsate 2s infinite;
+        }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        
+        .crosshair-line {
+            position: absolute;
+            background: #00f3ff;
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.8);
+        }
+        
+        #horizontal-line {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+        
+        #vertical-line {
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+        
+        #crosshair-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #ff00ff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px rgba(255, 0, 255, 0.7);
+        }
+        
+        #howToPlayScreen {
+            text-align: left;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        #howToPlayScreen h2 {
+            font-size: 2.5rem;
+            color: #00f3ff;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 15px #00f3ff;
+        }
+        
+        .instructions-section {
+            margin-bottom: 25px;
+            background: rgba(0, 15, 40, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+        }
+        
+        .instructions-section h3 {
+            color: #ff00ff;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instructions-section h3 i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .instructions-section p {
+            color: #fff;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        
+        .instructions-section ul {
+            padding-left: 25px;
+            margin-top: 10px;
+        }
+        
+        .instructions-section li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .game-mechanic {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(0, 20, 50, 0.5);
+            border-radius: 10px;
+            border-left: 3px solid #00f3ff;
+        }
+        
+        .mechanic-icon {
+            font-size: 1.8rem;
+            min-width: 40px;
+            text-align: center;
+            margin-right: 15px;
+            color: #ff00ff;
+        }
+        
+        .mechanic-content {
+            flex: 1;
+        }
+        
+        .mechanic-title {
+            color: #00f3ff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        @keyframes pulsate {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        
+        @keyframes collectAnim {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #controls-guide {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(0, 5, 20, 0.7);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.4);
+            z-index: 10;
+            backdrop-filter: blur(3px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .control-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .arrow-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .arrow-key {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 243, 255, 0.2);
+            border: 2px solid #00f3ff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #00f3ff;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+        
+        .q-key {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 0, 255, 0.2);
+            border: 2px solid #ff00ff;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen" class="screen">
+        <div class="loader"></div>
+        <h2 class="title" style="font-size: 2rem; margin-bottom: 15px;">LOADING GALACTIC ESCAPE</h2>
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+        </div>
+        <p id="loadingText" class="subtitle" style="margin-top: 15px;">Initializing game engine...</p>
+    </div>
+    
+    <div id="gameContainer">
+        <canvas id="canvas"></canvas>
+        
+        <div id="uiContainer">
+            <div id="startScreen" class="screen hidden">
+                <h1 class="title">GALACTIC ESCAPE</h1>
+                <p class="subtitle">Collect energy crystals to unlock the warp gate. Survive enemy attacks and escape the collapsing star system!</p>
+                <button id="startBtn" class="btn">START MISSION</button>
+                <button id="howToPlayBtn" class="btn" style="margin-top: 15px;">HOW TO PLAY</button>
+                <div style="position: absolute; bottom: 20px; color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">
+                    Use ARROW KEYS to move and aim, Q to shoot
+                </div>
+            </div>
+            
+            <div id="howToPlayScreen" class="screen hidden">
+                <h2>HOW TO PLAY</h2>
+                
+                <div class="instructions-section">
+                    <h3>🚀 Game Objective</h3>
+                    <p>Your mission is to collect energy crystals to unlock the warp gate and escape each level. Survive enemy attacks as you progress through increasingly difficult levels.</p>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>🎮 Controls</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">↑</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Arrow Up</div>
+                            <p>Move your ship forward</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">↓</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Arrow Down</div>
+                            <p>Move your ship backward</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">← →</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Arrow Left/Right</div>
+                            <p>Rotate your ship left and right</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">Q</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Fire Weapon</div>
+                            <p>Shoot your laser cannon at enemies</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">W/S</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Move Up/Down</div>
+                            <p>W key to move up, S key to move down</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">SPACE</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Boost</div>
+                            <p>Hold SPACE for a speed boost</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">P/ESC</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Pause</div>
+                            <p>Pause the game anytime</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>⚡ Energy System</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">⚡</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Energy Usage</div>
+                            <p>Firing your weapon consumes 5 energy units per shot</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🔄</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Energy Regeneration</div>
+                            <p>Energy regenerates slowly over time at 0.05 units per frame</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">💎</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Crystal Bonus</div>
+                            <p>Collecting crystals restores 20 energy units</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">⚠️</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Low Energy</div>
+                            <p>You cannot fire when energy drops below 10 units</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>💎 Crystal Collection</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">1️⃣</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Collecting Crystals</div>
+                            <p>Fly near the glowing yellow crystals to collect them</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🎯</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Required Crystals</div>
+                            <p>You must collect all 5 crystals to activate the warp gate</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">⭐</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Scoring</div>
+                            <p>Each crystal collected gives you 100 × current level points</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>🚪 Warp Gate & Progression</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🔵</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Warp Gate Activation</div>
+                            <p>The blue warp gate activates after collecting all 5 crystals</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🚪</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Level Completion</div>
+                            <p>Fly into the activated warp gate to complete the level</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">📈</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Level Progression</div>
+                            <p>Each new level increases difficulty with more enemies</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>⚔️ Combat & Damage</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🔴</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Enemies</div>
+                            <p>Red drones will chase and shoot at you</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">💥</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Combat</div>
+                            <p>Aim with the crosshair and shoot enemies with Q</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🛡️</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Shields</div>
+                            <p>Shields absorb damage first before your hull takes damage</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">❤️</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Health</div>
+                            <p>When shields are depleted, your hull takes damage</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-section">
+                    <h3>❤️ Lives & Respawning</h3>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">💔</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Ship Destruction</div>
+                            <p>When your health reaches zero, you lose a life</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">🔄</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Respawn</div>
+                            <p>You respawn with full health and shields after losing a life</p>
+                        </div>
+                    </div>
+                    <div class="game-mechanic">
+                        <div class="mechanic-icon">❌</div>
+                        <div class="mechanic-content">
+                            <div class="mechanic-title">Game Over</div>
+                            <p>If you lose all 3 lives, the mission fails</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="backToStartBtn" class="btn">BACK TO START</button>
+            </div>
+            
+            <div id="hud" class="hidden">
+                <div class="hud-header">
+                    <div class="hud-title">SHIP STATUS</div>
+                    <div class="hud-value" id="livesValue">♥♥♥</div>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">🛡️ SHIELDS:</span>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="shieldBar" class="progress-fill" style="width: 100%"></div>
+                        </div>
+                        <span class="hud-value" style="margin-left: 10px; min-width: 35px;">100%</span>
+                    </div>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">❤️ HULL:</span>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="healthBar" class="progress-fill" style="width: 100%"></div>
+                        </div>
+                        <span class="hud-value" style="margin-left: 10px; min-width: 35px;">100%</span>
+                    </div>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">⚡ ENERGY:</span>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="energyBar" class="progress-fill" style="width: 100%"></div>
+                        </div>
+                        <span class="hud-value" style="margin-left: 10px; min-width: 35px;">100%</span>
+                    </div>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">⭐ SCORE:</span>
+                    <span id="scoreValue" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">💎 CRYSTALS:</span>
+                    <span id="crystalsValue" class="hud-value">0/5</span>
+                </div>
+            </div>
+            
+            <div id="miniMap" class="hidden">
+                <div class="map-title">NAVIGATION MAP</div>
+                <canvas id="miniMapCanvas"></canvas>
+            </div>
+            
+            <div id="controlsInfo" class="hidden">
+                <h3 class="controls-title">🎮 CONTROLS</h3>
+                <div class="control-item">
+                    <span class="control-key">ARROW KEYS</span>
+                    <span class="control-desc">Move & Aim Ship</span>
+                </div>
+                <div class="control-item">
+                    <span class="control-key">SPACE</span>
+                    <span class="control-desc">Boost / Jump</span>
+                </div>
+                <div class="control-item">
+                    <span class="control-key">Q</span>
+                    <span class="control-desc">Fire Laser</span>
+                </div>
+                <div class="control-item">
+                    <span class="control-key">P / ESC</span>
+                    <span class="control-desc">Pause Game</span>
+                </div>
+            </div>
+            
+            <div id="levelIndicator" class="hidden">
+                <div id="levelText">LEVEL 1</div>
+            </div>
+            
+            <div class="status-indicator hidden">
+                <div class="status-item">
+                    <span class="status-icon">🚀</span>
+                    <span>ENGINES: ONLINE</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-icon">🛰️</span>
+                    <span>SENSORS: ACTIVE</span>
+                </div>
+            </div>
+            
+            <div id="controls-guide" class="hidden">
+                <div class="control-visual">
+                    <div class="arrow-row">
+                        <div class="arrow-key">↑</div>
+                    </div>
+                    <div class="arrow-row">
+                        <div class="arrow-key">←</div>
+                        <div class="arrow-key">↓</div>
+                        <div class="arrow-key">→</div>
+                    </div>
+                    <div class="q-key">Q</div>
+                </div>
+            </div>
+            
+            <div id="pauseScreen" class="screen hidden">
+                <h1 class="title">MISSION PAUSED</h1>
+                <button id="resumeBtn" class="btn">RESUME MISSION</button>
+            </div>
+            
+            <div id="gameOverScreen" class="screen hidden">
+                <h1 class="title">MISSION FAILED</h1>
+                <div id="finalScore">SCORE: 0</div>
+                <button id="restartBtn" class="btn">NEW MISSION</button>
+            </div>
+            
+            <div id="notification"></div>
+            
+            <div id="crosshair" class="hidden">
+                <div id="horizontal-line" class="crosshair-line"></div>
+                <div id="vertical-line" class="crosshair-line"></div>
+                <div id="crosshair-dot"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let scene, camera, renderer;
+        let player, asteroids = [], enemies = [], crystals = [], projectiles = [];
+        let clock = new THREE.Clock();
+        let gameState = "loading";
+        let score = 0;
+        let crystalsCollected = 0;
+        let health = 100;
+        let shields = 100;
+        let energy = 100;
+        let lives = 3;
+        let currentLevel = 1;
+        let miniMapCtx;
+        let lastShotTime = 0;
+        let shootCooldown = 200;
+        let enemyHealthBars = new Map();
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let moveUp = false;
+        let moveDown = false;
+        let boost = false;
+        let warpGate;
+        let loadingProgress = 0;
+        
+        let rotateLeft = false;
+        let rotateRight = false;
+        let rotateUp = false;
+        let rotateDown = false;
+        
+        const loadingMessages = [
+            "Initializing game engine...",
+            "Creating star field...",
+            "Building player ship...",
+            "Generating asteroids...",
+            "Creating enemy drones...",
+            "Placing energy crystals...",
+            "Building warp gate...",
+            "Setting up environment..."
+        ];
+        
+        function updateProgress(percent, message) {
+            loadingProgress = Math.min(100, percent);
+            document.getElementById('progressBar').style.width = loadingProgress + '%';
+            document.getElementById('loadingText').textContent = message;
+        }
+        
+        function showNotification(text, color = "#00f3ff") {
+            const notification = document.getElementById('notification');
+            notification.textContent = text;
+            notification.style.color = color;
+            notification.style.borderColor = color;
+            notification.style.boxShadow = `0 0 20px ${color}`;
+            notification.style.opacity = 1;
+            
+            setTimeout(() => {
+                notification.style.opacity = 0;
+            }, 2000);
+        }
+        
+        function init() {
+            try {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x000022);
+                scene.fog = new THREE.FogExp2(0x000044, 0.01);
+                
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+                camera.position.set(0, 5, 15);
+                
+                renderer = new THREE.WebGLRenderer({ 
+                    canvas: document.getElementById('canvas'),
+                    antialias: true,
+                    powerPreference: "high-performance"
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+                
+                const ambientLight = new THREE.AmbientLight(0x223366, 0.8);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+                directionalLight.position.set(5, 10, 7);
+                scene.add(directionalLight);
+                
+                createStars();
+                createPlayer();
+                createEnvironment();
+                
+                setupControls();
+                setupEventListeners();
+                
+                initMiniMap();
+                
+                return true;
+            } catch (e) {
+                console.error("Game initialization failed:", e);
+                updateProgress(100, "Initialization failed: " + e.message);
+                document.getElementById('loadingScreen').querySelector('.title').textContent = "LOADING FAILED";
+                document.getElementById('progressBar').style.background = "#ff0000";
+                return false;
+            }
+        }
+        
+        function createStars() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.15,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const starsVertices = [];
+            for (let i = 0; i < 500; i++) {
+                const x = THREE.MathUtils.randFloatSpread(2000);
+                const y = THREE.MathUtils.randFloatSpread(2000);
+                const z = THREE.MathUtils.randFloatSpread(2000);
+                starsVertices.push(x, y, z);
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            const starField = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(starField);
+        }
+        
+        function createPlayer() {
+            const group = new THREE.Group();
+            
+            const bodyGeometry = new THREE.ConeGeometry(1.2, 3, 6);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x2266ff,
+                emissive: 0x0044aa,
+                shininess: 100,
+                flatShading: true
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI / 2;
+            body.position.z = -1.5;
+            group.add(body);
+            
+            const engineGeometry = new THREE.ConeGeometry(0.5, 1.5, 6);
+            const engineMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff6600,
+                emissive: 0xaa3300
+            });
+            
+            const leftEngine = new THREE.Mesh(engineGeometry, engineMaterial);
+            leftEngine.position.set(-1.2, 0, 1.2);
+            group.add(leftEngine);
+            
+            const rightEngine = new THREE.Mesh(engineGeometry, engineMaterial);
+            rightEngine.position.set(1.2, 0, 1.2);
+            group.add(rightEngine);
+            
+            const engineGlowLeft = new THREE.PointLight(0xff5500, 2, 30);
+            engineGlowLeft.position.set(-1.2, 0, 1.8);
+            group.add(engineGlowLeft);
+            
+            const engineGlowRight = new THREE.PointLight(0xff5500, 2, 30);
+            engineGlowRight.position.set(1.2, 0, 1.8);
+            group.add(engineGlowRight);
+            
+            group.position.set(0, 0, 0);
+            group.rotation.x = Math.PI / 2;
+            
+            camera.add(group);
+            
+            player = group;
+            player.userData = {
+                velocity: new THREE.Vector3(),
+                speed: 0.3,
+                rotationSpeed: 0.05,
+                health: 100,
+                shields: 100,
+                energy: 100
+            };
+        }
+        
+        function createEnvironment() {
+            asteroids.forEach(a => scene.remove(a));
+            enemies.forEach(e => scene.remove(e));
+            crystals.forEach(c => scene.remove(c));
+            
+            asteroids = [];
+            enemies = [];
+            crystals = [];
+            for (let i = 0; i < 10; i++) {
+                const size = Math.random() * 3 + 1;
+                const geometry = new THREE.BoxGeometry(size, size, size);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0x888888,
+                    emissive: 0x222222
+                });
+                const asteroid = new THREE.Mesh(geometry, material);
+                asteroid.position.set(
+                    THREE.MathUtils.randFloatSpread(300),
+                    THREE.MathUtils.randFloatSpread(100),
+                    THREE.MathUtils.randFloatSpread(300) - 150
+                );
+                asteroid.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.3,
+                        (Math.random() - 0.5) * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    ),
+                    size: size
+                };
+                scene.add(asteroid);
+                asteroids.push(asteroid);
+            }
+            
+            for (let i = 0; i < 3 + currentLevel; i++) {
+                createEnemyDrone();
+            }
+            
+            for (let i = 0; i < 5; i++) {
+                createEnergyCrystal();
+            }
+            
+            createWarpGate();
+        }
+        
+        function createEnemyDrone() {
+            const group = new THREE.Group();
+            
+
+            const bodyGeometry = new THREE.SphereGeometry(1.5, 6, 6);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff3300,
+                emissive: 0x550000
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            group.add(body);
+            
+            group.position.set(
+                THREE.MathUtils.randFloatSpread(200),
+                THREE.MathUtils.randFloatSpread(80),
+                THREE.MathUtils.randFloatSpread(200) - 150
+            );
+            
+            const enemyGlow = new THREE.PointLight(0xff0000, 1.5, 40);
+            group.add(enemyGlow);
+            
+            scene.add(group);
+            
+            const enemy = group;
+            enemy.userData = {
+                health: 30 + (currentLevel * 5),
+                maxHealth: 30 + (currentLevel * 5),
+                speed: 0.1 + (currentLevel * 0.02),
+                lastShot: 0,
+                shootCooldown: 2000 + Math.random() * 1000 - (currentLevel * 100)
+            };
+            enemies.push(enemy);
+            
+            const healthBar = document.createElement('div');
+            healthBar.className = 'health-bar';
+            const healthFill = document.createElement('div');
+            healthFill.className = 'health-fill';
+            healthFill.style.width = '100%';
+            healthBar.appendChild(healthFill);
+            document.getElementById('gameContainer').appendChild(healthBar);
+            
+            enemyHealthBars.set(enemy.uuid, {
+                element: healthBar,
+                fill: healthFill
+            });
+        }
+        
+        function createEnergyCrystal() {
+            const group = new THREE.Group();
+            
+            const crystalGeometry = new THREE.ConeGeometry(0.5, 2, 6, 1, true);
+            const crystalMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffff00,
+                emissive: 0x444400,
+                transparent: true,
+                opacity: 0.9
+            });
+            const crystal = new THREE.Mesh(crystalGeometry, crystalMaterial);
+            crystal.rotation.x = Math.PI;
+            group.add(crystal);
+            
+            const crystalGlow = new THREE.PointLight(0xffff00, 1, 30);
+            group.add(crystalGlow);
+            
+            group.position.set(
+                THREE.MathUtils.randFloatSpread(250),
+                THREE.MathUtils.randFloatSpread(80),
+                THREE.MathUtils.randFloatSpread(250) - 150
+            );
+            
+            scene.add(group);
+            crystals.push(group);
+            
+            group.userData = {
+                rotationSpeed: Math.random() * 0.02 + 0.01
+            };
+        }
+        
+        function createWarpGate() {
+            const group = new THREE.Group();
+            
+            const ringGeometry = new THREE.TorusGeometry(15, 1.5, 6, 30);
+            const ringMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x00ffff,
+                emissive: 0x004444
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = Math.PI / 2;
+            group.add(ring);
+            
+            const portalGeometry = new THREE.CylinderGeometry(12, 12, 1, 12);
+            const portalMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const portal = new THREE.Mesh(portalGeometry, portalMaterial);
+            portal.position.set(0, 0, 0);
+            portal.rotation.x = Math.PI / 2;
+            group.add(portal);
+            
+            const portalGlow = new THREE.PointLight(0x00ffff, 3, 100);
+            group.add(portalGlow);
+            
+            group.position.set(0, 0, -300);
+            scene.add(group);
+            warpGate = group;
+        }
+        
+        function setupControls() {
+            // Removed PointerLockControls as i'm using arrow keys now
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+            document.getElementById('restartBtn').addEventListener('click', restartGame);
+            document.getElementById('howToPlayBtn').addEventListener('click', showHowToPlay);
+            document.getElementById('backToStartBtn').addEventListener('click', backToStart);
+            
+            window.addEventListener('blur', () => {
+                if (gameState === 'playing') togglePause();
+            });
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            document.addEventListener('keydown', (event) => {
+                switch (event.code) {
+                    case 'ArrowUp': moveForward = true; break;
+                    case 'ArrowDown': moveBackward = true; break;
+                    case 'ArrowLeft': rotateLeft = true; break;
+                    case 'ArrowRight': rotateRight = true; break;
+                    case 'KeyW': moveUp = true; break;
+                    case 'KeyS': moveDown = true; break;
+                    case 'Space': boost = true; break;
+                    case 'Escape': togglePause(); break;
+                    case 'KeyP': togglePause(); break;
+                    case 'KeyQ': shoot(); break;
+                }
+            });
+            
+            document.addEventListener('keyup', (event) => {
+                switch (event.code) {
+                    case 'ArrowUp': moveForward = false; break;
+                    case 'ArrowDown': moveBackward = false; break;
+                    case 'ArrowLeft': rotateLeft = false; break;
+                    case 'ArrowRight': rotateRight = false; break;
+                    case 'KeyW': moveUp = false; break;
+                    case 'KeyS': moveDown = false; break;
+                    case 'Space': boost = false; break;
+                }
+            });
+        }
+        
+        function showHowToPlay() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('howToPlayScreen').classList.remove('hidden');
+        }
+        
+        function backToStart() {
+            document.getElementById('howToPlayScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+        
+        function shoot() {
+            const now = Date.now();
+            if (now - lastShotTime < shootCooldown) return;
+            lastShotTime = now;
+            
+            if (energy < 10) {
+                showNotification("LOW ENERGY!", "#ff3300");
+                return;
+            }
+            
+            energy -= 5;
+            updateEnergyBar();
+            
+            const weaponPosition = new THREE.Vector3();
+            player.getWorldPosition(weaponPosition);
+            weaponPosition.z -= 2;
+            
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            direction.normalize();
+            
+            createProjectile(weaponPosition, direction);
+            
+            document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1.2)';
+            setTimeout(() => {
+                document.getElementById('crosshair').style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 100);
+        }
+        
+        function initMiniMap() {
+            const miniMapCanvas = document.getElementById('miniMapCanvas');
+            miniMapCtx = miniMapCanvas.getContext('2d');
+            miniMapCanvas.width = 180;
+            miniMapCanvas.height = 180;
+        }
+        
+        function updateMiniMap() {
+            if (!miniMapCtx) return;
+            const ctx = miniMapCtx;
+            const canvas = ctx.canvas;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0, 5, 20, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * 18);
+                ctx.lineTo(canvas.width, i * 18);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(i * 18, 0);
+                ctx.lineTo(i * 18, canvas.height);
+                ctx.stroke();
+            }
+            
+            const playerX = canvas.width / 2;
+            const playerY = canvas.height / 2;
+            
+            ctx.fillStyle = '#00aaff';
+            ctx.beginPath();
+            ctx.arc(playerX, playerY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#00aaff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(playerX, playerY);
+            const directionX = playerX + Math.sin(-camera.rotation.y) * 15;
+            const directionY = playerY + Math.cos(-camera.rotation.y) * 15;
+            ctx.lineTo(directionX, directionY);
+            ctx.stroke();
+            
+            const gateX = playerX;
+            const gateY = playerY + 100;
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.arc(gateX, gateY, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            crystals.forEach(crystal => {
+                const crystalX = playerX + (crystal.position.x - camera.position.x) / 10;
+                const crystalY = playerY + (crystal.position.z - camera.position.z) / 10;
+                if (crystalX > 0 && crystalX < canvas.width && crystalY > 0 && crystalY < canvas.height) {
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(crystalX, crystalY, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            
+            enemies.forEach(enemy => {
+                const enemyX = playerX + (enemy.position.x - camera.position.x) / 10;
+                const enemyY = playerY + (enemy.position.z - camera.position.z) / 10;
+                if (enemyX > 0 && enemyX < canvas.width && enemyY > 0 && enemyY < canvas.height) {
+                    ctx.fillStyle = '#ff3300';
+                    ctx.beginPath();
+                    ctx.arc(enemyX, enemyY, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function startGame() {
+            gameState = "playing";
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('miniMap').classList.remove('hidden');
+            document.getElementById('controlsInfo').classList.remove('hidden');
+            document.getElementById('levelIndicator').classList.remove('hidden');
+            document.querySelector('.status-indicator').classList.remove('hidden');
+            document.getElementById('controls-guide').classList.remove('hidden');
+            document.getElementById('crosshair').classList.remove('hidden');
+            document.getElementById('levelText').textContent = `LEVEL ${currentLevel}`;
+        }
+        
+        function togglePause() {
+            if (gameState === "playing") {
+                gameState = "paused";
+                document.getElementById('pauseScreen').classList.remove('hidden');
+                document.getElementById('crosshair').classList.add('hidden');
+            } else if (gameState === "paused") {
+                resumeGame();
+            }
+        }
+        
+        function resumeGame() {
+            gameState = "playing";
+            document.getElementById('pauseScreen').classList.add('hidden');
+            document.getElementById('crosshair').classList.remove('hidden');
+        }
+        
+        function gameOver() {
+            gameState = "gameover";
+            document.getElementById('finalScore').textContent = `SCORE: ${score}`;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('crosshair').classList.add('hidden');
+        }
+        
+        function restartGame() {
+            score = 0;
+            crystalsCollected = 0;
+            health = 100;
+            shields = 100;
+            energy = 100;
+            lives = 3;
+            currentLevel = 1;
+            
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('crystalsValue').textContent = `${crystalsCollected}/5`;
+            document.getElementById('healthBar').style.width = '100%';
+            document.getElementById('shieldBar').style.width = '100%';
+            document.getElementById('energyBar').style.width = '100%';
+            document.getElementById('levelText').textContent = `LEVEL ${currentLevel}`;
+            document.getElementById('livesValue').textContent = '♥♥♥';
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            camera.position.set(0, 5, 15);
+            camera.rotation.set(0, 0, 0);
+            
+            projectiles.forEach(p => scene.remove(p));
+            projectiles = [];
+            
+            enemies.forEach(e => {
+                scene.remove(e);
+                const healthBar = enemyHealthBars.get(e.uuid);
+                if (healthBar) {
+                    healthBar.element.remove();
+                }
+            });
+            enemies = [];
+            enemyHealthBars.clear();
+            
+            crystals.forEach(c => scene.remove(c));
+            crystals = [];
+            
+            asteroids.forEach(a => scene.remove(a));
+            asteroids = [];
+            
+            createEnvironment();
+            startGame();
+        }
+        
+        function collectCrystal(crystal) {
+            scene.remove(crystal);
+            crystals = crystals.filter(c => c !== crystal);
+            score += 100 * currentLevel;
+            crystalsCollected++;
+            energy = Math.min(100, energy + 20);
+            
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('crystalsValue').textContent = `${crystalsCollected}/5`;
+            updateEnergyBar();
+            
+            const effect = document.createElement('div');
+            effect.className = 'collect-effect';
+            const screenPos = crystal.position.clone().project(camera);
+            const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+            effect.style.left = `${x}px`;
+            effect.style.top = `${y}px`;
+            document.getElementById('gameContainer').appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 500);
+            
+            if (crystalsCollected === 5) {
+                showNotification("WARP GATE ACTIVATED! FLY TO THE GATE TO JUMP!", "#00ff99");
+            }
+        }
+        
+        function takeDamage(amount) {
+            if (shields > 0) {
+                shields = Math.max(0, shields - amount);
+                updateShieldBar();
+            } else {
+                health = Math.max(0, health - amount);
+                updateHealthBar();
+                if (health <= 0) {
+                    lives--;
+                    document.getElementById('livesValue').textContent = '♥'.repeat(lives);
+                    if (lives <= 0) {
+                        gameOver();
+                    } else {
+                        health = 100;
+                        shields = 100;
+                        updateHealthBar();
+                        updateShieldBar();
+                        camera.position.set(0, 5, 15);
+                        camera.rotation.set(0, 0, 0);
+                        showNotification("SHIP DESTROYED! RESPAWNING...", "#ff3300");
+                    }
+                }
+            }
+        }
+        
+        function updateHealthBar() {
+            const healthBar = document.getElementById('healthBar');
+            healthBar.style.width = `${health}%`;
+            healthBar.parentElement.nextElementSibling.textContent = `${Math.round(health)}%`;
+        }
+        
+        function updateShieldBar() {
+            const shieldBar = document.getElementById('shieldBar');
+            shieldBar.style.width = `${shields}%`;
+            shieldBar.parentElement.nextElementSibling.textContent = `${Math.round(shields)}%`;
+        }
+        
+        function updateEnergyBar() {
+            const energyBar = document.getElementById('energyBar');
+            energyBar.style.width = `${energy}%`;
+            energyBar.parentElement.nextElementSibling.textContent = `${Math.round(energy)}%`;
+        }
+        
+        function updateEnemyHealthBar(enemy) {
+            const healthData = enemyHealthBars.get(enemy.uuid);
+            if (healthData) {
+                const healthPercent = (enemy.userData.health / enemy.userData.maxHealth) * 100;
+                healthData.fill.style.width = `${healthPercent}%`;
+                
+                const screenPos = enemy.position.clone().project(camera);
+                const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+                
+                healthData.element.style.left = `${x}px`;
+                healthData.element.style.top = `${y - 50}px`;
+                healthData.element.style.display = 'block';
+            }
+        }
+        
+        function updatePlayer(delta) {
+            if (gameState !== 'playing') return;
+            
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            direction.y = 0;
+            direction.normalize();
+            
+            const velocity = new THREE.Vector3();
+            
+            const speed = boost ? 0.4 : 0.2;
+            if (moveForward) velocity.add(direction.clone().multiplyScalar(speed));
+            if (moveBackward) velocity.add(direction.clone().multiplyScalar(-speed));
+            if (moveLeft) velocity.add(new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(speed));
+            if (moveRight) velocity.add(new THREE.Vector3(direction.z, 0, -direction.x).multiplyScalar(speed));
+            if (moveUp) velocity.y += speed;
+            if (moveDown) velocity.y -= speed;
+            
+            camera.position.add(velocity);
+            
+            const rotationSpeed = 0.05;
+            if (rotateLeft) {
+                camera.rotation.y += rotationSpeed;
+            }
+            if (rotateRight) {
+                camera.rotation.y -= rotationSpeed;
+            }
+            
+            if (velocity.length() > 0) {
+                player.rotation.z = -velocity.x * 0.1;
+                player.rotation.x = Math.PI/2 + velocity.y * 0.05;
+            }
+        }
+        
+        function update() {
+            if (gameState !== 'playing') return;
+            
+            const delta = clock.getDelta();
+            const now = Date.now();
+            
+            updatePlayer(delta);
+            
+            asteroids.forEach(asteroid => {
+                asteroid.rotation.x += asteroid.userData.velocity.x * delta;
+                asteroid.rotation.y += asteroid.userData.velocity.y * delta;
+                asteroid.rotation.z += asteroid.userData.velocity.z * delta;
+                asteroid.position.x += asteroid.userData.velocity.x * 0.5;
+                asteroid.position.y += asteroid.userData.velocity.y * 0.5;
+                asteroid.position.z += asteroid.userData.velocity.z * 0.5;
+                
+                if (asteroid.position.x > 150) asteroid.position.x = -150;
+                if (asteroid.position.x < -150) asteroid.position.x = 150;
+                if (asteroid.position.y > 50) asteroid.position.y = -50;
+                if (asteroid.position.y < -50) asteroid.position.y = 50;
+                if (asteroid.position.z > 50) asteroid.position.z = -350;
+                if (asteroid.position.z < -350) asteroid.position.z = 50;
+                
+                const dx = camera.position.x - asteroid.position.x;
+                const dy = camera.position.y - asteroid.position.y;
+                const dz = camera.position.z - asteroid.position.z;
+                const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                if (distance < asteroid.userData.size + 2) {
+                    takeDamage(2);
+                    asteroid.position.set(
+                        THREE.MathUtils.randFloatSpread(300),
+                        THREE.MathUtils.randFloatSpread(100),
+                        THREE.MathUtils.randFloatSpread(300) - 150
+                    );
+                }
+            });
+            
+            enemies.forEach(enemy => {
+                const dx = camera.position.x - enemy.position.x;
+                const dy = camera.position.y - enemy.position.y;
+                const dz = camera.position.z - enemy.position.z;
+                const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                if (distance > 20) {
+                    enemy.position.x += dx * 0.005 * enemy.userData.speed;
+                    enemy.position.y += dy * 0.005 * enemy.userData.speed;
+                    enemy.position.z += dz * 0.005 * enemy.userData.speed;
+                }
+                
+                enemy.rotation.x += 0.01;
+                enemy.rotation.y += 0.01;
+                
+                if (now - enemy.userData.lastShot > enemy.userData.shootCooldown && distance < 100) {
+                    enemy.userData.lastShot = now;
+                    const direction = new THREE.Vector3(dx, dy, dz).normalize();
+                    createProjectile(enemy.position, direction, true);
+                }
+                
+                updateEnemyHealthBar(enemy);
+                
+                if (distance < 5) {
+                    takeDamage(1);
+                    enemy.position.set(
+                        THREE.MathUtils.randFloatSpread(200),
+                        THREE.MathUtils.randFloatSpread(80),
+                        THREE.MathUtils.randFloatSpread(200) - 150
+                    );
+                }
+            });
+            
+            crystals.forEach(crystal => {
+                crystal.rotation.y += crystal.userData.rotationSpeed;
+                
+                const dx = camera.position.x - crystal.position.x;
+                const dy = camera.position.y - crystal.position.y;
+                const dz = camera.position.z - crystal.position.z;
+                const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                
+                if (distance < 4) {
+                    collectCrystal(crystal);
+                }
+            });
+            
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.position.add(p.userData.velocity);
+                
+                if (p.position.length() > 500) {
+                    scene.remove(p);
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+                
+                if (p.userData.isEnemy) {
+                    const dx = camera.position.x - p.position.x;
+                    const dy = camera.position.y - p.position.y;
+                    const dz = camera.position.z - p.position.z;
+                    const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    if (distance < 3) {
+                        takeDamage(p.userData.damage);
+                        scene.remove(p);
+                        projectiles.splice(i, 1);
+                        continue;
+                    }
+                }
+                
+                if (!p.userData.isEnemy) {
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const e = enemies[j];
+                        const dx = e.position.x - p.position.x;
+                        const dy = e.position.y - p.position.y;
+                        const dz = e.position.z - p.position.z;
+                        const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                        
+                        if (distance < 3) {
+                            e.userData.health -= p.userData.damage;
+                            updateEnemyHealthBar(e);
+                            
+                            if (e.userData.health <= 0) {
+                                score += 50 * currentLevel;
+                                document.getElementById('scoreValue').textContent = score;
+                                
+                                const healthBar = enemyHealthBars.get(e.uuid);
+                                if (healthBar) {
+                                    healthBar.element.remove();
+                                    enemyHealthBars.delete(e.uuid);
+                                }
+                                
+                                scene.remove(e);
+                                enemies.splice(j, 1);
+                                
+                                if (enemies.length < 5 + currentLevel * 2) {
+                                    createEnemyDrone();
+                                }
+                            }
+                            
+                            scene.remove(p);
+                            projectiles.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (energy < 100) {
+                energy += 0.05;
+                updateEnergyBar();
+            }
+            
+            if (warpGate && crystalsCollected >= 5) {
+                const warpGatePos = new THREE.Vector3();
+                warpGate.getWorldPosition(warpGatePos);
+                const playerPos = camera.position;
+                const distance = playerPos.distanceTo(warpGatePos);
+                
+                if (distance < 20) {
+                    currentLevel++;
+                    document.getElementById('levelText').textContent = `LEVEL ${currentLevel}`;
+                    showNotification(`WARP JUMP SUCCESSFUL! ENTERING LEVEL ${currentLevel}`, "#00f3ff");
+                    
+                    camera.position.set(0, 5, 15);
+                    camera.rotation.set(0, 0, 0);
+                    
+                    crystalsCollected = 0;
+                    document.getElementById('crystalsValue').textContent = `${crystalsCollected}/5`;
+                    
+                    projectiles.forEach(p => scene.remove(p));
+                    projectiles = [];
+                    
+                    enemies.forEach(e => {
+                        scene.remove(e);
+                        const healthBar = enemyHealthBars.get(e.uuid);
+                        if (healthBar) {
+                            healthBar.element.remove();
+                        }
+                    });
+                    enemies = [];
+                    enemyHealthBars.clear();
+                    
+                    crystals.forEach(c => scene.remove(c));
+                    crystals = [];
+                    
+                    asteroids.forEach(a => scene.remove(a));
+                    asteroids = [];
+                    
+                    createEnvironment();
+                    
+                    shootCooldown = Math.max(100, shootCooldown - 20);
+                }
+            }
+        }
+        
+        function createProjectile(position, direction, isEnemy = false) {
+            const geometry = new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: isEnemy ? 0xff0000 : 0x00ffff 
+            });
+            const projectile = new THREE.Mesh(geometry, material);
+            
+            projectile.position.copy(position);
+            projectile.lookAt(position.clone().add(direction));
+            
+            scene.add(projectile);
+            
+            projectile.userData = {
+                velocity: direction.clone().multiplyScalar(isEnemy ? 0.5 : 1),
+                damage: isEnemy ? 10 : 20,
+                isEnemy: isEnemy
+            };
+            
+            projectiles.push(projectile);
+            
+            // I should add laser beam effect don't I
+            if (!isEnemy) {
+                const beam = document.createElement('div');
+                beam.className = 'laser-beam';
+                beam.style.left = '50%';
+                beam.style.top = '50%';
+                beam.style.transform = 'translate(-50%, -50%)';
+                document.getElementById('gameContainer').appendChild(beam);
+                
+                setTimeout(() => {
+                    beam.remove();
+                }, 100);
+            }
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            updateMiniMap();
+            renderer.render(scene, camera);
+        }
+        
+        function simulateLoading() {
+            const loadingDuration = 5000; 
+            const intervalTime = 100; 
+            const startTime = Date.now();
+            const steps = loadingDuration / intervalTime;
+            let currentStep = 0;
+            
+            const loadingInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(100, (elapsed / loadingDuration) * 100);
+                
+                // this Calculates which loading message to show I guess :)
+                const stageIndex = Math.min(loadingMessages.length - 1, Math.floor(progress / (100 / loadingMessages.length)));
+                
+                updateProgress(progress, loadingMessages[stageIndex]);
+                
+                if (progress >= 100) {
+                    clearInterval(loadingInterval);
+                    const initSuccess = init();
+                    
+                    if (initSuccess) {
+                        document.getElementById('loadingScreen').classList.add('hidden');
+                        document.getElementById('startScreen').classList.remove('hidden');
+                        
+                        animate();
+                    }
+                }
+                
+                currentStep++;
+            }, intervalTime);
+        }
+        
+        window.addEventListener('load', simulateLoading);
+    </script>
+</body>
+</html>
